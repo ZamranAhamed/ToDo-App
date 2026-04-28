@@ -3,6 +3,14 @@ import Todo from "../models/Todo.js";
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const getValidationMessage = (error, fallback) => {
+  if (error.name === "ValidationError") {
+    return Object.values(error.errors)[0]?.message || fallback;
+  }
+
+  return fallback;
+};
+
 export const getTodos = async (req, res) => {
   try {
     const todos = await Todo.find().sort({ createdAt: -1 });
@@ -27,7 +35,10 @@ export const createTodo = async (req, res) => {
 
     res.status(201).json(todo);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create todo", error: error.message });
+    const message = getValidationMessage(error, "Failed to create todo");
+    const statusCode = error.name === "ValidationError" ? 400 : 500;
+
+    res.status(statusCode).json({ message, error: error.message });
   }
 };
 
@@ -73,7 +84,10 @@ export const updateTodo = async (req, res) => {
 
     res.status(200).json(todo);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update todo", error: error.message });
+    const message = getValidationMessage(error, "Failed to update todo");
+    const statusCode = error.name === "ValidationError" ? 400 : 500;
+
+    res.status(statusCode).json({ message, error: error.message });
   }
 };
 

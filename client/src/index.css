@@ -8,3 +8,19 @@ body {
   min-height: 100vh;
   background: #f6f7f9;
 }
+
+.todo-card {
+  animation: todo-enter 180ms ease-out;
+}
+
+@keyframes todo-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

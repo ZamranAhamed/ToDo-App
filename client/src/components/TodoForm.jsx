@@ -15,14 +15,16 @@ const TodoForm = ({ onAddTodo, isSubmitting }) => {
       return;
     }
 
-    await onAddTodo({
+    const wasAdded = await onAddTodo({
       title: title.trim(),
       description: description.trim()
     });
 
-    setTitle("");
-    setDescription("");
-    setValidationError("");
+    if (wasAdded) {
+      setTitle("");
+      setDescription("");
+      setValidationError("");
+    }
   };
 
   return (
@@ -41,10 +43,15 @@ const TodoForm = ({ onAddTodo, isSubmitting }) => {
               setValidationError("");
             }}
             placeholder="Add a task"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(validationError)}
+            aria-describedby={validationError ? "title-error" : undefined}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100"
           />
           {validationError && (
-            <p className="mt-1 text-sm text-red-600">{validationError}</p>
+            <p id="title-error" className="mt-1 text-sm text-red-600">
+              {validationError}
+            </p>
           )}
         </div>
 
@@ -58,7 +65,8 @@ const TodoForm = ({ onAddTodo, isSubmitting }) => {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Optional details"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            disabled={isSubmitting}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100"
           />
         </div>
 
