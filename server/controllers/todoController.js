@@ -3,6 +3,60 @@ import Todo from "../models/Todo.js";
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const getValidationMessage = (error, fallback) => {
+  if (error.name === "ValidationError") {
+    return Object.values(error.errors)[0]?.message || fallback;
+  }
+
+  return fallback;
+};
+
+const PRIORITIES = ["low", "medium", "high"];
+
+const normalizeTodoFields = ({ title, description, priority, dueDate }, requireTitle = false) => {
+  const data = {};
+
+  if (requireTitle || title !== undefined) {
+    if (typeof title !== "string" || !title.trim()) {
+      return { error: "Title is required" };
+    }
+
+    data.title = title.trim();
+  }
+
+  if (description !== undefined) {
+    if (typeof description !== "string") {
+      return { error: "Description must be a string" };
+    }
+
+    data.description = description.trim();
+  }
+
+  if (priority !== undefined) {
+    if (!PRIORITIES.includes(priority)) {
+      return { error: "Priority must be low, medium, or high" };
+    }
+
+    data.priority = priority;
+  }
+
+  if (dueDate !== undefined) {
+    if (dueDate === null || dueDate === "") {
+      data.dueDate = null;
+    } else {
+      const parsedDate = new Date(dueDate);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        return { error: "Due date must be a valid date" };
+      }
+
+      data.dueDate = parsedDate;
+    }
+  }
+
+  return { data };
+};
+
 export const getTodos = async (req, res) => {
   try {
     const todos = await Todo.find().sort({ createdAt: -1 });
@@ -14,20 +68,20 @@ export const getTodos = async (req, res) => {
 
 export const createTodo = async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { data, error } = normalizeTodoFields(req.body, true);
 
-    if (typeof title !== "string" || !title.trim()) {
-      return res.status(400).json({ message: "Title is required" });
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    const todo = await Todo.create({
-      title: title.trim(),
-      description: typeof description === "string" ? description.trim() : ""
-    });
+    const todo = await Todo.create(data);
 
     res.status(201).json(todo);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create todo", error: error.message });
+    const message = getValidationMessage(error, "Failed to create todo");
+    const statusCode = error.name === "ValidationError" ? 400 : 500;
+
+    res.status(statusCode).json({ message, error: error.message });
   }
 };
 
@@ -39,27 +93,14 @@ export const updateTodo = async (req, res) => {
       return res.status(400).json({ message: "Invalid todo id" });
     }
 
-    const { title, description } = req.body;
-    const updateData = {};
+    const { data: updateData, error } = normalizeTodoFields(req.body);
 
-    if (title !== undefined) {
-      if (typeof title !== "string" || !title.trim()) {
-        return res.status(400).json({ message: "Title is required" });
-      }
-
-      updateData.title = title.trim();
-    }
-
-    if (description !== undefined) {
-      if (typeof description !== "string") {
-        return res.status(400).json({ message: "Description must be a string" });
-      }
-
-      updateData.description = description.trim();
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: "Provide title or description to update" });
+      return res.status(400).json({ message: "Provide todo details to update" });
     }
 
     const todo = await Todo.findByIdAndUpdate(id, updateData, {
@@ -73,7 +114,10 @@ export const updateTodo = async (req, res) => {
 
     res.status(200).json(todo);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update todo", error: error.message });
+    const message = getValidationMessage(error, "Failed to update todo");
+    const statusCode = error.name === "ValidationError" ? 400 : 500;
+
+    res.status(statusCode).json({ message, error: error.message });
   }
 };
 

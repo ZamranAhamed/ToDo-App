@@ -1,10 +1,61 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-const TodoItem = ({ todo, onUpdateTodo, onToggleDone, onDeleteTodo }) => {
+const PRIORITY_STYLES = {
+  low: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950 dark:text-sky-200 dark:ring-sky-900",
+  medium: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900",
+  high: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900"
+};
+
+const getDateValue = (daysFromToday) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const DUE_DATE_SHORTCUTS = [
+  { label: "Today", value: getDateValue(0) },
+  { label: "Tomorrow", value: getDateValue(1) },
+  { label: "Next week", value: getDateValue(7) }
+];
+
+const TodoItem = ({
+  todo,
+  onUpdateTodo,
+  onToggleDone,
+  onDeleteTodo,
+  disabled,
+  pendingType
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(todo.title);
   const [description, setDescription] = useState(todo.description || "");
+  const [priority, setPriority] = useState(todo.priority || "medium");
+  const [dueDate, setDueDate] = useState(todo.dueDate ? todo.dueDate.slice(0, 10) : "");
   const [validationError, setValidationError] = useState("");
+  const dueDateInputRef = useRef(null);
+  const isSaving = pendingType === "update";
+  const isDeleting = pendingType === "delete";
+  const formattedDueDate = todo.dueDate
+    ? new Date(todo.dueDate).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
+    : null;
+  const todayValue = getDateValue(0);
+  const todoDueDateValue = todo.dueDate ? todo.dueDate.slice(0, 10) : "";
+  const isDueNow = Boolean(todoDueDateValue) && todoDueDateValue <= todayValue && !todo.done;
+
+  const startEditing = () => {
+    if (!disabled) {
+      setIsEditing(true);
+    }
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -12,34 +63,65 @@ const TodoItem = ({ todo, onUpdateTodo, onToggleDone, onDeleteTodo }) => {
       return;
     }
 
-    await onUpdateTodo(todo._id, {
+    const wasUpdated = await onUpdateTodo(todo._id, {
       title: title.trim(),
-      description: description.trim()
+      description: description.trim(),
+      priority,
+      dueDate: dueDate || null
     });
 
-    setValidationError("");
-    setIsEditing(false);
+    if (wasUpdated) {
+      setValidationError("");
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {
     setTitle(todo.title);
     setDescription(todo.description || "");
+    setPriority(todo.priority || "medium");
+    setDueDate(todo.dueDate ? todo.dueDate.slice(0, 10) : "");
     setValidationError("");
     setIsEditing(false);
   };
 
+  const handleEditKeyDown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleSave();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleCancel();
+    }
+  };
+
+  const openDatePicker = () => {
+    if (dueDateInputRef.current?.showPicker) {
+      dueDateInputRef.current.showPicker();
+      return;
+    }
+
+    dueDateInputRef.current?.focus();
+  };
+
   return (
-    <li className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex gap-3">
+    <li
+      className={`todo-card rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 ${todo.done ? "border-l-4 border-l-emerald-500 opacity-75" : "border-l-4 border-l-sky-500"
+        }`}
+    >
+      <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap">
         <input
           type="checkbox"
           checked={todo.done}
           onChange={() => onToggleDone(todo._id)}
-          className="mt-1 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          disabled={disabled}
+          className="mt-1 h-5 w-5 rounded border-gray-300 text-emerald-600 transition focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label={`Mark ${todo.title} as ${todo.done ? "not done" : "done"}`}
         />
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
           {isEditing ? (
             <div className="space-y-3">
               <div>
@@ -50,7 +132,11 @@ const TodoItem = ({ todo, onUpdateTodo, onToggleDone, onDeleteTodo }) => {
                     setTitle(event.target.value);
                     setValidationError("");
                   }}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  onKeyDown={handleEditKeyDown}
+                  disabled={isSaving}
+                  aria-invalid={Boolean(validationError)}
+                  autoFocus
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
                 />
                 {validationError && (
                   <p className="mt-1 text-sm text-red-600">{validationError}</p>
@@ -61,57 +147,153 @@ const TodoItem = ({ todo, onUpdateTodo, onToggleDone, onDeleteTodo }) => {
                 type="text"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
+                onKeyDown={handleEditKeyDown}
                 placeholder="Description"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                disabled={isSaving}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
               />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <select
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value)}
+                  disabled={isSaving}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
+                >
+                  <option value="low">Low priority</option>
+                  <option value="medium">Medium priority</option>
+                  <option value="high">High priority</option>
+                </select>
+
+                <div className="relative">
+                  <input
+                    ref={dueDateInputRef}
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => setDueDate(event.target.value)}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900 [&::-webkit-calendar-picker-indicator]:hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={openDatePicker}
+                    disabled={isSaving}
+                    className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-800"
+                    aria-label="Open calendar"
+                  >
+                    <span className="relative block h-5 w-5" aria-hidden="true">
+                      <span className="absolute inset-x-0 bottom-0 top-1 rounded-sm border-2 border-current" />
+                      <span className="absolute left-0 right-0 top-2 border-t-2 border-current" />
+                      <span className="absolute left-1 top-0 h-2 w-0.5 rounded-full bg-current" />
+                      <span className="absolute right-1 top-0 h-2 w-0.5 rounded-full bg-current" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {DUE_DATE_SHORTCUTS.map((shortcut) => (
+                  <button
+                    key={shortcut.label}
+                    type="button"
+                    onClick={() => setDueDate(shortcut.value)}
+                    disabled={isSaving}
+                    className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    {shortcut.label}
+                  </button>
+                ))}
+                {dueDate && (
+                  <button
+                    type="button"
+                    onClick={() => setDueDate("")}
+                    disabled={isSaving}
+                    className="rounded-md px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950"
+                  >
+                    Clear due date
+                  </button>
+                )}
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={!title.trim()}
-                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  disabled={!title.trim() || isSaving}
+                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:scale-[1.02] hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:scale-100 dark:bg-gray-100 dark:text-gray-950 dark:hover:bg-white"
                 >
-                  Save
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                  disabled={isSaving}
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <div className={todo.done ? "text-gray-400" : "text-gray-900"}>
-              <h2 className={`break-words text-base font-semibold ${todo.done ? "line-through" : ""}`}>
-                {todo.title}
-              </h2>
+            <button
+              type="button"
+              onClick={startEditing}
+              disabled={disabled}
+              className={`block w-full rounded-md text-left outline-none transition hover:bg-gray-50 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed dark:hover:bg-gray-800 ${todo.done
+                  ? "text-gray-400"
+                  : isDueNow
+                    ? "text-red-600 dark:text-red-300"
+                    : "text-gray-900 dark:text-gray-100"
+                }`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className={`break-words text-base font-semibold ${todo.done ? "line-through" : ""}`}>
+                  {todo.title}
+                </h2>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold capitalize ring-1 ${PRIORITY_STYLES[todo.priority || "medium"]}`}>
+                  {todo.priority || "medium"}
+                </span>
+              </div>
               {todo.description && (
-                <p className={`mt-1 break-words text-sm ${todo.done ? "line-through" : "text-gray-600"}`}>
+                <p
+                  className={`mt-2 break-words text-sm leading-6 ${todo.done
+                      ? "line-through"
+                      : isDueNow
+                        ? "text-red-600 dark:text-red-300"
+                        : "text-gray-600 dark:text-gray-300"
+                    }`}
+                >
                   {todo.description}
                 </p>
               )}
-            </div>
+              {formattedDueDate && (
+                <p
+                  className={`mt-2 text-xs font-medium ${isDueNow ? "text-red-600 dark:text-red-300" : "text-gray-500 dark:text-gray-400"
+                    }`}
+                >
+                  {isDueNow ? "Due now" : "Due"} {formattedDueDate}
+                </p>
+              )}
+            </button>
           )}
         </div>
 
         {!isEditing && (
-          <div className="flex shrink-0 gap-2">
+          <div className="ml-8 flex w-full shrink-0 gap-2 sm:ml-0 sm:w-auto sm:self-start">
             <button
               type="button"
-              onClick={() => setIsEditing(true)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              onClick={startEditing}
+              disabled={disabled}
+              className="min-h-9 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium leading-none text-gray-700 transition hover:scale-[1.02] hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               Edit
             </button>
             <button
               type="button"
               onClick={() => onDeleteTodo(todo._id)}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              disabled={disabled}
+              className="min-h-9 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium leading-none text-red-600 transition hover:scale-[1.02] hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </button>
           </div>
         )}
