@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import darkLogo from "./LOGO_Dark.png";
+import lightLogo from "./LOGO_Light.png";
 import TodoForm from "./components/TodoForm.jsx";
 import TodoList from "./components/TodoList.jsx";
 import {
@@ -10,6 +12,7 @@ import {
 } from "./services/api.js";
 
 const FILTER_OPTIONS = ["all", "active", "completed"];
+const PRIORITY_FILTER_OPTIONS = ["all", "low", "medium", "high"];
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
   { value: "oldest", label: "Oldest" },
@@ -24,6 +27,9 @@ const App = () => {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState(() => localStorage.getItem("todoFilter") || "all");
+  const [priorityFilter, setPriorityFilter] = useState(
+    () => localStorage.getItem("todoPriorityFilter") || "all"
+  );
   const [search, setSearch] = useState(() => localStorage.getItem("todoSearch") || "");
   const [sortBy, setSortBy] = useState(() => localStorage.getItem("todoSort") || "newest");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -68,6 +74,10 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("todoFilter", filter);
   }, [filter]);
+
+  useEffect(() => {
+    localStorage.setItem("todoPriorityFilter", priorityFilter);
+  }, [priorityFilter]);
 
   useEffect(() => {
     localStorage.setItem("todoSearch", search);
@@ -189,6 +199,7 @@ const App = () => {
 
       return true;
     })
+    .filter((todo) => priorityFilter === "all" || (todo.priority || "medium") === priorityFilter)
     .filter((todo) => todo.title.toLowerCase().includes(normalizedSearch))
     .sort((firstTodo, secondTodo) => {
       if (sortBy === "oldest") {
@@ -211,11 +222,20 @@ const App = () => {
       <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 transition-colors dark:bg-gray-950 dark:text-gray-100">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-          <p className="text-sm font-medium uppercase tracking-wide text-emerald-700">
-            MERN TODO
-          </p>
-            <h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">Tasks</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm transition dark:border-gray-800 dark:bg-gray-900">
+              <img
+                src={isDarkMode ? darkLogo : lightLogo}
+                alt="TODO app logo"
+                className="h-10 w-10 object-contain transition-opacity duration-300"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                MERN TODO
+              </p>
+              <h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">Tasks</h1>
+            </div>
           </div>
           <button
             type="button"
@@ -248,21 +268,50 @@ const App = () => {
 
         <section className="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFilter(option)}
-                  className={`rounded-md px-3 py-2 text-sm font-medium capitalize transition ${
-                    filter === option
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+            <div className="space-y-3">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Status
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {FILTER_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFilter(option)}
+                      className={`rounded-md px-3 py-2 text-sm font-medium capitalize transition ${
+                        filter === option
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  Priority
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {PRIORITY_FILTER_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setPriorityFilter(option)}
+                      className={`rounded-md px-3 py-2 text-sm font-medium capitalize transition ${
+                        priorityFilter === option
+                          ? "bg-sky-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-[minmax(180px,1fr)_150px]">
@@ -293,19 +342,6 @@ const App = () => {
           </p>
         </section>
 
-        {toast && (
-          <div
-            className={`mt-4 rounded-md border px-4 py-3 text-sm shadow-sm transition ${
-              toast.type === "error"
-                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
-                : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
-            }`}
-            role="status"
-          >
-            {toast.message}
-          </div>
-        )}
-
         {error && (
           <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
             {error}
@@ -335,11 +371,27 @@ const App = () => {
       <button
         type="button"
         onClick={() => setIsAddModalOpen(true)}
-        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-3xl font-light text-white shadow-lg shadow-emerald-900/20 transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-900"
+        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-900"
         aria-label="Add task"
       >
-        +
+        <span className="relative block h-6 w-6" aria-hidden="true">
+          <span className="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
+          <span className="absolute left-1/2 top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
+        </span>
       </button>
+
+      {toast && (
+        <div
+          className={`fixed right-4 top-4 z-50 w-[calc(100%-2rem)] max-w-sm rounded-md border px-4 py-3 text-sm shadow-lg transition sm:right-6 ${
+            toast.type === "error"
+              ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+          }`}
+          role="status"
+        >
+          {toast.message}
+        </div>
+      )}
 
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-950/50 px-4 py-6 backdrop-blur-sm transition sm:items-center">

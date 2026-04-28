@@ -1,10 +1,27 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const PRIORITY_STYLES = {
   low: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950 dark:text-sky-200 dark:ring-sky-900",
   medium: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900",
   high: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900"
 };
+
+const getDateValue = (daysFromToday) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const DUE_DATE_SHORTCUTS = [
+  { label: "Today", value: getDateValue(0) },
+  { label: "Tomorrow", value: getDateValue(1) },
+  { label: "Next week", value: getDateValue(7) }
+];
 
 const TodoItem = ({
   todo,
@@ -20,6 +37,7 @@ const TodoItem = ({
   const [priority, setPriority] = useState(todo.priority || "medium");
   const [dueDate, setDueDate] = useState(todo.dueDate ? todo.dueDate.slice(0, 10) : "");
   const [validationError, setValidationError] = useState("");
+  const dueDateInputRef = useRef(null);
   const isSaving = pendingType === "update";
   const isDeleting = pendingType === "delete";
   const formattedDueDate = todo.dueDate
@@ -29,6 +47,9 @@ const TodoItem = ({
         year: "numeric"
       })
     : null;
+  const todayValue = getDateValue(0);
+  const todoDueDateValue = todo.dueDate ? todo.dueDate.slice(0, 10) : "";
+  const isDueNow = Boolean(todoDueDateValue) && todoDueDateValue <= todayValue && !todo.done;
 
   const startEditing = () => {
     if (!disabled) {
@@ -76,13 +97,22 @@ const TodoItem = ({
     }
   };
 
+  const openDatePicker = () => {
+    if (dueDateInputRef.current?.showPicker) {
+      dueDateInputRef.current.showPicker();
+      return;
+    }
+
+    dueDateInputRef.current?.focus();
+  };
+
   return (
     <li
       className={`todo-card rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 ${
         todo.done ? "border-l-4 border-l-emerald-500 opacity-75" : "border-l-4 border-l-sky-500"
       }`}
     >
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap">
         <input
           type="checkbox"
           checked={todo.done}
@@ -92,7 +122,7 @@ const TodoItem = ({
           aria-label={`Mark ${todo.title} as ${todo.done ? "not done" : "done"}`}
         />
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
           {isEditing ? (
             <div className="space-y-3">
               <div>
@@ -136,13 +166,54 @@ const TodoItem = ({
                   <option value="high">High priority</option>
                 </select>
 
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(event) => setDueDate(event.target.value)}
-                  disabled={isSaving}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
-                />
+                <div className="relative">
+                  <input
+                    ref={dueDateInputRef}
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => setDueDate(event.target.value)}
+                    disabled={isSaving}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={openDatePicker}
+                    disabled={isSaving}
+                    className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-800"
+                    aria-label="Open calendar"
+                  >
+                    <span className="relative block h-5 w-5" aria-hidden="true">
+                      <span className="absolute inset-x-0 bottom-0 top-1 rounded-sm border-2 border-current" />
+                      <span className="absolute left-0 right-0 top-2 border-t-2 border-current" />
+                      <span className="absolute left-1 top-0 h-2 w-0.5 rounded-full bg-current" />
+                      <span className="absolute right-1 top-0 h-2 w-0.5 rounded-full bg-current" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {DUE_DATE_SHORTCUTS.map((shortcut) => (
+                  <button
+                    key={shortcut.label}
+                    type="button"
+                    onClick={() => setDueDate(shortcut.value)}
+                    disabled={isSaving}
+                    className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    {shortcut.label}
+                  </button>
+                ))}
+                {dueDate && (
+                  <button
+                    type="button"
+                    onClick={() => setDueDate("")}
+                    disabled={isSaving}
+                    className="rounded-md px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950"
+                  >
+                    Clear due date
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -170,7 +241,11 @@ const TodoItem = ({
               onClick={startEditing}
               disabled={disabled}
               className={`block w-full rounded-md text-left outline-none transition hover:bg-gray-50 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed dark:hover:bg-gray-800 ${
-                todo.done ? "text-gray-400" : "text-gray-900 dark:text-gray-100"
+                todo.done
+                  ? "text-gray-400"
+                  : isDueNow
+                    ? "text-red-600 dark:text-red-300"
+                    : "text-gray-900 dark:text-gray-100"
               }`}
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -182,13 +257,25 @@ const TodoItem = ({
                 </span>
               </div>
               {todo.description && (
-                <p className={`mt-2 break-words text-sm leading-6 ${todo.done ? "line-through" : "text-gray-600 dark:text-gray-300"}`}>
+                <p
+                  className={`mt-2 break-words text-sm leading-6 ${
+                    todo.done
+                      ? "line-through"
+                      : isDueNow
+                        ? "text-red-600 dark:text-red-300"
+                        : "text-gray-600 dark:text-gray-300"
+                  }`}
+                >
                   {todo.description}
                 </p>
               )}
               {formattedDueDate && (
-                <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                  Due {formattedDueDate}
+                <p
+                  className={`mt-2 text-xs font-medium ${
+                    isDueNow ? "text-red-600 dark:text-red-300" : "text-gray-500 dark:text-gray-400"
+                  }`}
+                >
+                  {isDueNow ? "Due now" : "Due"} {formattedDueDate}
                 </p>
               )}
             </button>
@@ -196,12 +283,12 @@ const TodoItem = ({
         </div>
 
         {!isEditing && (
-          <div className="flex shrink-0 gap-2">
+          <div className="ml-8 flex w-full shrink-0 gap-2 sm:ml-0 sm:w-auto sm:self-start">
             <button
               type="button"
               onClick={startEditing}
               disabled={disabled}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:scale-[1.02] hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              className="min-h-9 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium leading-none text-gray-700 transition hover:scale-[1.02] hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               Edit
             </button>
@@ -209,7 +296,7 @@ const TodoItem = ({
               type="button"
               onClick={() => onDeleteTodo(todo._id)}
               disabled={disabled}
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:scale-[1.02] hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
+              className="min-h-9 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium leading-none text-red-600 transition hover:scale-[1.02] hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
