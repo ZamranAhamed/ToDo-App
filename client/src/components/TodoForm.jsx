@@ -141,8 +141,7 @@ const TodoForm = ({ onAddTodo, isSubmitting, onSuccess, onCancel, autoFocus = fa
                 type="date"
                 value={dueDate}
                 onChange={(event) => setDueDate(event.target.value)}
-                disabled={isSubmitting}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900 [&::-webkit-calendar-picker-indicator]:hidden"
               />
               <button
                 type="button"

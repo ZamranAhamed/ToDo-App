@@ -42,10 +42,10 @@ const TodoItem = ({
   const isDeleting = pendingType === "delete";
   const formattedDueDate = todo.dueDate
     ? new Date(todo.dueDate).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      })
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
     : null;
   const todayValue = getDateValue(0);
   const todoDueDateValue = todo.dueDate ? todo.dueDate.slice(0, 10) : "";
@@ -108,9 +108,8 @@ const TodoItem = ({
 
   return (
     <li
-      className={`todo-card rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 ${
-        todo.done ? "border-l-4 border-l-emerald-500 opacity-75" : "border-l-4 border-l-sky-500"
-      }`}
+      className={`todo-card rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 ${todo.done ? "border-l-4 border-l-emerald-500 opacity-75" : "border-l-4 border-l-sky-500"
+        }`}
     >
       <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap">
         <input
@@ -172,8 +171,7 @@ const TodoItem = ({
                     type="date"
                     value={dueDate}
                     onChange={(event) => setDueDate(event.target.value)}
-                    disabled={isSaving}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-12 text-gray-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900 [&::-webkit-calendar-picker-indicator]:hidden"
                   />
                   <button
                     type="button"
@@ -240,13 +238,12 @@ const TodoItem = ({
               type="button"
               onClick={startEditing}
               disabled={disabled}
-              className={`block w-full rounded-md text-left outline-none transition hover:bg-gray-50 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed dark:hover:bg-gray-800 ${
-                todo.done
+              className={`block w-full rounded-md text-left outline-none transition hover:bg-gray-50 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed dark:hover:bg-gray-800 ${todo.done
                   ? "text-gray-400"
                   : isDueNow
                     ? "text-red-600 dark:text-red-300"
                     : "text-gray-900 dark:text-gray-100"
-              }`}
+                }`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className={`break-words text-base font-semibold ${todo.done ? "line-through" : ""}`}>
@@ -258,22 +255,20 @@ const TodoItem = ({
               </div>
               {todo.description && (
                 <p
-                  className={`mt-2 break-words text-sm leading-6 ${
-                    todo.done
+                  className={`mt-2 break-words text-sm leading-6 ${todo.done
                       ? "line-through"
                       : isDueNow
                         ? "text-red-600 dark:text-red-300"
                         : "text-gray-600 dark:text-gray-300"
-                  }`}
+                    }`}
                 >
                   {todo.description}
                 </p>
               )}
               {formattedDueDate && (
                 <p
-                  className={`mt-2 text-xs font-medium ${
-                    isDueNow ? "text-red-600 dark:text-red-300" : "text-gray-500 dark:text-gray-400"
-                  }`}
+                  className={`mt-2 text-xs font-medium ${isDueNow ? "text-red-600 dark:text-red-300" : "text-gray-500 dark:text-gray-400"
+                    }`}
                 >
                   {isDueNow ? "Due now" : "Due"} {formattedDueDate}
                 </p>
