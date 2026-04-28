@@ -7,10 +7,27 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: #f6f7f9;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+.dark body {
+  background: #030712;
+}
+
+body *,
+body *::before,
+body *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+  transition-duration: 220ms;
+  transition-timing-function: ease;
 }
 
 .todo-card {
   animation: todo-enter 180ms ease-out;
+}
+
+.animate-modal-in {
+  animation: modal-in 180ms ease-out;
 }
 
 @keyframes todo-enter {
@@ -22,5 +39,17 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

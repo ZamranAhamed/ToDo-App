@@ -26,6 +26,8 @@ const App = () => {
   const [filter, setFilter] = useState(() => localStorage.getItem("todoFilter") || "all");
   const [search, setSearch] = useState(() => localStorage.getItem("todoSearch") || "");
   const [sortBy, setSortBy] = useState(() => localStorage.getItem("todoSort") || "newest");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem("todoTheme") === "dark");
   const toastTimeoutRef = useRef(null);
 
   const getErrorMessage = (err, fallback) =>
@@ -74,6 +76,11 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("todoSort", sortBy);
   }, [sortBy]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDarkMode);
+    localStorage.setItem("todoTheme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   const handleAddTodo = async (todoData) => {
     try {
@@ -197,20 +204,49 @@ const App = () => {
 
   const activeCount = todos.filter((todo) => !todo.done).length;
   const completedCount = todos.length - activeCount;
+  const progressPercent = todos.length > 0 ? Math.round((completedCount / todos.length) * 100) : 0;
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900">
+    <div className={isDarkMode ? "dark" : ""}>
+      <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 transition-colors dark:bg-gray-950 dark:text-gray-100">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8">
+        <header className="mb-8 flex items-start justify-between gap-4">
+          <div>
           <p className="text-sm font-medium uppercase tracking-wide text-emerald-700">
             MERN TODO
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-gray-950">Tasks</h1>
+            <h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">Tasks</h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsDarkMode((current) => !current)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
+          >
+            {isDarkMode ? "Light" : "Dark"}
+          </button>
         </header>
 
-        <TodoForm onAddTodo={handleAddTodo} isSubmitting={isSubmitting} />
+        <section className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Progress</p>
+              <p className="mt-1 text-lg font-semibold text-gray-950 dark:text-white">
+                {completedCount} of {todos.length} tasks completed
+              </p>
+            </div>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              {progressPercent}%
+            </span>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </section>
 
-        <section className="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <section className="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-wrap gap-2">
               {FILTER_OPTIONS.map((option) => (
@@ -221,7 +257,7 @@ const App = () => {
                   className={`rounded-md px-3 py-2 text-sm font-medium capitalize transition ${
                     filter === option
                       ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                   }`}
                 >
                   {option}
@@ -235,13 +271,13 @@ const App = () => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by title"
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
               />
 
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-emerald-900"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -252,7 +288,7 @@ const App = () => {
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             {activeCount} active, {completedCount} completed
           </p>
         </section>
@@ -261,8 +297,8 @@ const App = () => {
           <div
             className={`mt-4 rounded-md border px-4 py-3 text-sm shadow-sm transition ${
               toast.type === "error"
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
             }`}
             role="status"
           >
@@ -271,14 +307,14 @@ const App = () => {
         )}
 
         {error && (
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
             {error}
           </div>
         )}
 
         <section className="mt-6">
           {isLoading ? (
-            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
+            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
               Loading...
             </div>
           ) : (
@@ -290,11 +326,47 @@ const App = () => {
               onDeleteTodo={handleDeleteTodo}
               disabled={areActionsDisabled}
               pendingAction={pendingAction}
+              onAddClick={() => setIsAddModalOpen(true)}
             />
           )}
         </section>
       </div>
-    </main>
+
+      <button
+        type="button"
+        onClick={() => setIsAddModalOpen(true)}
+        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-3xl font-light text-white shadow-lg shadow-emerald-900/20 transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-900"
+        aria-label="Add task"
+      >
+        +
+      </button>
+
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-950/50 px-4 py-6 backdrop-blur-sm transition sm:items-center">
+          <div className="w-full max-w-xl animate-modal-in">
+            <div className="mb-3 flex items-center justify-between rounded-t-lg bg-white px-5 py-4 shadow-sm dark:bg-gray-900">
+              <h2 className="text-lg font-semibold text-gray-950 dark:text-white">Add new task</h2>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="rounded-md px-3 py-1 text-2xl leading-none text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+                aria-label="Close add task modal"
+              >
+                x
+              </button>
+            </div>
+            <TodoForm
+              onAddTodo={handleAddTodo}
+              isSubmitting={isSubmitting}
+              onSuccess={() => setIsAddModalOpen(false)}
+              onCancel={() => setIsAddModalOpen(false)}
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+      </main>
+    </div>
   );
 };
 
