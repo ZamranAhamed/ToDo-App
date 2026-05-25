@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// Validation: Mongoose schema rules for todo fields before saving to MongoDB.
 const todoSchema = new mongoose.Schema({
   title: {
     type: String,

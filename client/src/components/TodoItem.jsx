@@ -58,6 +58,7 @@ const TodoItem = ({
   };
 
   const handleSave = async () => {
+    // Validation: title is required before editing a todo.
     if (!title.trim()) {
       setValidationError("Title is required");
       return;

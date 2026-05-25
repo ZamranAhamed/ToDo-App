@@ -26,6 +26,7 @@ const TodoForm = ({ onAddTodo, isSubmitting, onSuccess, onCancel, autoFocus = fa
   const titleInputRef = useRef(null);
   const dueDateInputRef = useRef(null);
 
+  // Validation: title is required before creating a todo.
   const isTitleValid = title.trim().length > 0;
 
   useEffect(() => {

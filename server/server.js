@@ -8,7 +8,9 @@ dotenv.config();
 
 const app = express();
 
+// CORS: allows the React frontend origin to send requests to this Express API.
 app.use(cors());
+// Request lifecycle: parses incoming JSON bodies before routes/controllers run.
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -17,6 +19,7 @@ app.get("/", (req, res) => {
 
 await connectDB();
 
+// Express routing: all todo API requests are forwarded to todoRoutes.
 app.use("/api/todos", todoRoutes);
 
 const PORT = process.env.PORT || 5000;

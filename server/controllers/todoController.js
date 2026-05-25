@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
 import Todo from "../models/Todo.js";
 
+// Validation: checks if route params contain a valid MongoDB ObjectId.
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+// Error handling: extracts useful Mongoose validation messages.
 const getValidationMessage = (error, fallback) => {
   if (error.name === "ValidationError") {
     return Object.values(error.errors)[0]?.message || fallback;
@@ -13,6 +15,7 @@ const getValidationMessage = (error, fallback) => {
 
 const PRIORITIES = ["low", "medium", "high"];
 
+// Validation: normalizes and validates request body fields before database writes.
 const normalizeTodoFields = ({ title, description, priority, dueDate }, requireTitle = false) => {
   const data = {};
 
@@ -60,8 +63,10 @@ const normalizeTodoFields = ({ title, description, priority, dueDate }, requireT
 export const getTodos = async (req, res) => {
   try {
     const todos = await Todo.find().sort({ createdAt: -1 });
+    // Status code: 200 means todos fetched successfully.
     res.status(200).json(todos);
   } catch (error) {
+    // Error handling + status code: 500 means unexpected server/database error.
     res.status(500).json({ message: "Failed to fetch todos", error: error.message });
   }
 };
@@ -71,16 +76,19 @@ export const createTodo = async (req, res) => {
     const { data, error } = normalizeTodoFields(req.body, true);
 
     if (error) {
+      // Status code: 400 means the client sent invalid todo data.
       return res.status(400).json({ message: error });
     }
 
     const todo = await Todo.create(data);
 
+    // Status code: 201 means a new todo was created.
     res.status(201).json(todo);
   } catch (error) {
     const message = getValidationMessage(error, "Failed to create todo");
     const statusCode = error.name === "ValidationError" ? 400 : 500;
 
+    // Error handling: returns validation errors as 400 and unknown errors as 500.
     res.status(statusCode).json({ message, error: error.message });
   }
 };
@@ -90,6 +98,7 @@ export const updateTodo = async (req, res) => {
     const { id } = req.params;
 
     if (!isValidId(id)) {
+      // Validation + status code: invalid MongoDB id is a bad request.
       return res.status(400).json({ message: "Invalid todo id" });
     }
 
@@ -109,14 +118,17 @@ export const updateTodo = async (req, res) => {
     });
 
     if (!todo) {
+      // Status code: 404 means the todo id is valid but no document exists.
       return res.status(404).json({ message: "Todo not found" });
     }
 
+    // Status code: 200 means todo updated successfully.
     res.status(200).json(todo);
   } catch (error) {
     const message = getValidationMessage(error, "Failed to update todo");
     const statusCode = error.name === "ValidationError" ? 400 : 500;
 
+    // Error handling: returns validation errors as 400 and unknown errors as 500.
     res.status(statusCode).json({ message, error: error.message });
   }
 };
@@ -126,20 +138,24 @@ export const toggleDone = async (req, res) => {
     const { id } = req.params;
 
     if (!isValidId(id)) {
+      // Validation + status code: invalid MongoDB id is a bad request.
       return res.status(400).json({ message: "Invalid todo id" });
     }
 
     const todo = await Todo.findById(id);
 
     if (!todo) {
+      // Status code: 404 means the todo id is valid but no document exists.
       return res.status(404).json({ message: "Todo not found" });
     }
 
     todo.done = !todo.done;
     await todo.save();
 
+    // Status code: 200 means todo status toggled successfully.
     res.status(200).json(todo);
   } catch (error) {
+    // Error handling + status code: 500 means unexpected server/database error.
     res.status(500).json({ message: "Failed to update todo status", error: error.message });
   }
 };
@@ -149,17 +165,21 @@ export const deleteTodo = async (req, res) => {
     const { id } = req.params;
 
     if (!isValidId(id)) {
+      // Validation + status code: invalid MongoDB id is a bad request.
       return res.status(400).json({ message: "Invalid todo id" });
     }
 
     const todo = await Todo.findByIdAndDelete(id);
 
     if (!todo) {
+      // Status code: 404 means the todo id is valid but no document exists.
       return res.status(404).json({ message: "Todo not found" });
     }
 
+    // Status code: 200 means todo deleted successfully.
     res.status(200).json({ message: "Todo deleted successfully" });
   } catch (error) {
+    // Error handling + status code: 500 means unexpected server/database error.
     res.status(500).json({ message: "Failed to delete todo", error: error.message });
   }
 };

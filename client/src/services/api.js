@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/todos";
 
+// Axios: shared HTTP client used by React to call the Express REST API.
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -9,6 +10,7 @@ const api = axios.create({
   }
 });
 
+// Request lifecycle: each function sends one REST request and returns response data.
 export const getTodos = async () => {
   const response = await api.get("/");
   return response.data;

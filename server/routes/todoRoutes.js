@@ -9,6 +9,7 @@ import {
 
 const router = express.Router();
 
+// Express routing: maps REST methods and paths to controller functions.
 router.get("/", getTodos);
 router.post("/", createTodo);
 router.put("/:id", updateTodo);
